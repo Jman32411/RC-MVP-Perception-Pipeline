@@ -23,7 +23,6 @@ def normalize_hue(in_img: np.ndarray, scale_factor: float):
     # We also have to change the data type back to the original type
     return np.clip(cv.merge([b, g, r]), 0, 255).astype(np.uint8)
 
-
 def normalize_saturation(in_img: np.ndarray, s_scale: float, v_scale):
     # convert from BGR to HSV
     # change the data type to float32 so that numpy doesn't get angry.
@@ -43,13 +42,13 @@ def normalize_saturation(in_img: np.ndarray, s_scale: float, v_scale):
     # We also have to change the data type back to the original type
     return cv.cvtColor(cv.merge([h, s, v]).astype(np.uint8), cv.COLOR_HSV2BGR)
 
-
 # clear terminal
 os.system('cls||clear')
 
 data_dir = r"Data\fsoco_sample"
 # files = ["amz_00075.jpg", "amz_00016.jpg", "amz_00588.jpg", "ff_00006.png", "ff_00258.png", "mms_00614.jpg"]
 files = os.listdir(rf"{data_dir}\images")
+
 for img_name in files:
     img_path = rf"{data_dir}\images\{img_name}"
 
@@ -63,18 +62,24 @@ for img_name in files:
     # convert to HSV as that's better for edge detection
     hsv = cv.cvtColor(img_scale, cv.COLOR_BGR2HSV)
 
-    #* REMINDER OpenCV uses H: 0-179, S: 0-255, V: 0-255
-    lower_bound = np.array([22, 95, 167])
-    upper_bound = np.array([50, 255, 255])
+    # #* REMINDER OpenCV uses H: 0-179, S: 0-255, V: 0-255
+    # temp yellow bounds
+    lower_bound = np.array([20, 96, 96])
+    upper_bound = np.array([30, 255, 255])
+
+    # temp blue bounds
+    # lower_bound = np.array([100, 150, 100])
+    # upper_bound = np.array([130, 255, 255])
+
     filter = cv.inRange(hsv, lower_bound, upper_bound)
 
     # use a bitwise and to look for points in our image that ONLY fall between our bounds
     masked = cv.bitwise_and(img_scale, img_scale, mask=filter)
 
     # Show image.
-    cv.imshow("original - w/norm", norm_img)
+    cv.imshow(f"{img_name} | original - w/norm", norm_img)
     # cv.imshow("B/W filter", filter)
-    cv.imshow("Overlaid filter", masked)
+    cv.imshow(f"{img_name} | Overlaid filter", masked)
     # Hold image until keypress, then delete
     cv.waitKey(0)
     cv.destroyAllWindows()

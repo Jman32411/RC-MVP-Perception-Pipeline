@@ -28,7 +28,7 @@ while True:
     # Show image.
     cv.imshow("original", img_scale)
     # cv.imshow("B/W filter", filter)
-    cv.imshow("Overlaid filter", masked, )
+    cv.imshow("Overlaid filter", masked)
     # Hold image until keypress, then delete
     cv.waitKey(0)
     cv.destroyWindow("Overlaid filter")
