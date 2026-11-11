@@ -29,7 +29,7 @@ def normalize_saturation(in_img: np.ndarray):
     # change the data type to float32 so that numpy doesn't get angry.
     in_img = cv.cvtColor(in_img, cv.COLOR_BGR2HSV).astype(np.float32)
 
-    # separate the image into the rgb channels
+    # separate the image into the hsv channels
     h, s, v = cv.split(in_img)
 
     # find the average of the 3 separate colors. This will be part of the scaling factor
@@ -39,6 +39,7 @@ def normalize_saturation(in_img: np.ndarray):
     print(v.mean())
 
     s *= s/s.mean()
+    # ! THIS IS WHERE THE DEEP FRYING COMES FROM! IT SHOULD BE v/v.mean() NOT s/v.mean()
     v *= s/v.mean()
     
     print(s)
@@ -61,14 +62,19 @@ data_dir = r"Data\fsoco_sample"
 img_name = "amz_00075.jpg"
 img_name = "amz_00016.jpg"
 img_name = "amz_00588.jpg"
+img_name = "ff_00006.png"
+img_name = "ff_00258.png"
+img_name = "mms_00614.jpg"
 
 img_path = rf"{data_dir}\images\{img_name}"
 
 img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
 
-norm_img = normalize_hue(img)
+img_scale = cv.resize(img, (940, 540))
+cv.imshow("original - no norm", img_scale)
+
+norm_img = normalize_hue(img_scale)
 norm_img = normalize_saturation(norm_img)
-img_scale = cv.resize(norm_img, (940, 540))
 # convert to HSV as that's better for edge detection
 hsv = cv.cvtColor(img_scale, cv.COLOR_BGR2HSV)
 
@@ -81,7 +87,7 @@ filter = cv.inRange(hsv, lower_bound, upper_bound)
 masked = cv.bitwise_and(img_scale, img_scale, mask=filter)
 
 # Show image.
-cv.imshow("original", img_scale)
+cv.imshow("original - w/norm", norm_img)
 # cv.imshow("B/W filter", filter)
 cv.imshow("Overlaid filter", masked)
 # Hold image until keypress, then delete
