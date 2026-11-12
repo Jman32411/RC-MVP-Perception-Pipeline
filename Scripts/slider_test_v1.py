@@ -28,9 +28,9 @@ cv.createTrackbar('H_lower', window_name, 0, 179, nothing)
 cv.createTrackbar('S_lower', window_name, 0, 255, nothing)
 cv.createTrackbar('V_lower', window_name, 0, 255, nothing)
 
-cv.createTrackbar('H_upper', window_name, 0, 179, nothing)
-cv.createTrackbar('S_upper', window_name, 0, 255, nothing)
-cv.createTrackbar('V_upper', window_name, 0, 255, nothing)
+cv.createTrackbar('H_upper', window_name, 179, 179, nothing)
+cv.createTrackbar('S_upper', window_name, 255, 255, nothing)
+cv.createTrackbar('V_upper', window_name, 255, 255, nothing)
 
 
 key_pressed = cv.waitKey(1)
