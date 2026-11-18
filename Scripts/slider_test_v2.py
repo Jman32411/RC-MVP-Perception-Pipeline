@@ -74,44 +74,43 @@ files = os.listdir(rf"{data_dir}\images")
 
 # Iterate through all files in test folder
 for img_name in files:
+    key_pressed = cv.waitKey(1)
+    while key_pressed == -1:
+        # get the image path
+        img_path = rf"{data_dir}\images\{img_name}"
 
-   key_pressed = cv.waitKey(1)
-   while key_pressed == -1:
-      # get the image path
-      img_path = rf"{data_dir}\images\{img_name}"
+        # read the image
+        img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
 
-      # read the image
-      img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
+        # scale the image down
+        img_scale = cv.resize(img, (940, 540))
 
-      # scale the image down
-      img_scale = cv.resize(img, (940, 540))
+        # get HSV slider positions
+        # beacuse the sliders only operate in int, we get more precision by dividing by 10
+        hue_scale = cv.getTrackbarPos('Hue_scale', window_name)/10
+        sat_scale = cv.getTrackbarPos('Sat_scale', window_name)/10
+        val_scale = cv.getTrackbarPos('Val_scale', window_name)/10
 
-      # get HSV slider positions
-      # beacuse the sliders only operate in int, we get more precision by dividing by 10
-      hue_scale = cv.getTrackbarPos('Hue_scale', window_name)/10
-      sat_scale = cv.getTrackbarPos('Sat_scale', window_name)/10
-      val_scale = cv.getTrackbarPos('Val_scale', window_name)/10
+        # apply the normalization
+        norm_img = normalize_hue(img_scale, hue_scale)
+        norm_img = normalize_saturation(norm_img, sat_scale, val_scale)
 
-      # apply the normalization
-      norm_img = normalize_hue(img_scale, hue_scale)
-      norm_img = normalize_saturation(norm_img, sat_scale, val_scale)
+        # convert to HSV as that's better for edge detection
+        hsv = cv.cvtColor(norm_img, cv.COLOR_BGR2HSV)
 
-      # convert to HSV as that's better for edge detection
-      hsv = cv.cvtColor(norm_img, cv.COLOR_BGR2HSV)
+        # Get the slider positions and apply them to the bounds
+        lower_bound = np.array([int(cv.getTrackbarPos('H_lower', window_name)), int(cv.getTrackbarPos('S_lower', window_name)), int(cv.getTrackbarPos('V_lower', window_name))])
+        upper_bound = np.array([int(cv.getTrackbarPos('H_upper', window_name)), int(cv.getTrackbarPos('S_upper', window_name)), int(cv.getTrackbarPos('V_upper', window_name))])
 
-      # Get the slider positions and apply them to the bounds
-      lower_bound = np.array([int(cv.getTrackbarPos('H_lower', window_name)), int(cv.getTrackbarPos('S_lower', window_name)), int(cv.getTrackbarPos('V_lower', window_name))])
-      upper_bound = np.array([int(cv.getTrackbarPos('H_upper', window_name)), int(cv.getTrackbarPos('S_upper', window_name)), int(cv.getTrackbarPos('V_upper', window_name))])
+        # get the filter
+        filter = cv.inRange(hsv, lower_bound, upper_bound)
 
-      # get the filter
-      filter = cv.inRange(hsv, lower_bound, upper_bound)
+        # use a bitwise and to look for points in our image that ONLY fall between our bounds
+        masked = cv.bitwise_and(norm_img, norm_img, mask=filter)
 
-      # use a bitwise and to look for points in our image that ONLY fall between our bounds
-      masked = cv.bitwise_and(norm_img, norm_img, mask=filter)
+        # Show images.
+        cv.imshow("original - no norm", img_scale) 
+        cv.imshow("Overlaid filter", masked)
 
-      # Show images.
-      cv.imshow("original - no norm", img_scale) 
-      cv.imshow("Overlaid filter", masked)
-
-      # Check periodically to see if any key is pressed.
-      key_pressed = cv.waitKey(1)
+        # Check periodically to see if any key is pressed.
+        key_pressed = cv.waitKey(1)
