@@ -77,9 +77,6 @@ def find_contours(image_mat: np.ndarray):
     contours, hierarchy = cv.findContours(thresh, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
     return contours
 
-def filter_contours(contours, max_size: float):
-    return()
-
 # clear terminal
 os.system('cls||clear')
 
@@ -100,16 +97,28 @@ for img_name in files:
     # read the image
     img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
 
-    # scale the image down
-    img_scale = cv.resize(img, (940, 540))
+    # get image dimensions
+    img_height, img_width, channels = img.shape
+    border = 140
+    horizon = round(img_height/2.75)
 
-    mask = get_mask(img_scale)
+    mask = get_mask(img)
     contours = find_contours(mask)
 
+    cv.line(img, (border, horizon), (img_width-border, horizon), (0, 0, 255), 2)
+    
     # initialize empty lists
     rect_bounds = []
+    print(f"Frame: {img_width}x{img_height}")
+
+    min_height_scalar = 0.01
+    min_width_scalar = 0.005
+    min_height = round(img_height*min_height_scalar)
+    min_width = round(img_width*min_width_scalar)
+    print(f"min_height: {min_height}| min_width: {min_width} | horizon_Y: {horizon}")
 
     for index, contour in enumerate(contours):
+        color = (0, 255, 255)
         # form contours into polygons
         # poly_contour = cv.approxPolyDP(contour, 2, True)
 
@@ -121,24 +130,38 @@ for img_name in files:
         width = rectangle_info[2]
         height = rectangle_info[3]
         area = height*width
+        rect_aspect_ratio = width/height
+        max_aspect_ratio = 2
+        min_aspect_ratio = 0.2
 
         # filter the rectangles that are too small
-        if (area < 20) or (height < 3) or (width < 3):
+        if (height < min_height) or (width < min_width):
+            continue
+        # Filter the rectangles that are above our horizon line
+        if (rectangle_info[1]<=horizon):
+            continue
+        # Filter the rectangles that are too wide/thin
+        if (rect_aspect_ratio>= max_aspect_ratio) or (rect_aspect_ratio <= min_aspect_ratio):
             continue
 
-        print(f"H: {height}\nW: {width}\nA:{area}")
-        # If they are above the size limit, add it to the list
+
+        print(f"W: {width} | H: {height} | A:{area} | AR: {rect_aspect_ratio} | Y: {rectangle_info[1]}")
+
+        # If they fit the criteria add it to the list
         rect_bounds.append(rectangle_info)
 
         # draw the rect
         # top left corner
-        cv.line(img_scale, (rectangle_info[0], rectangle_info[1]), (rectangle_info[0]+rectangle_info[2], rectangle_info[1]), (0, 0, 255))
-        cv.line(img_scale, (rectangle_info[0], rectangle_info[1]), (rectangle_info[0], rectangle_info[1]+rectangle_info[3]), (0, 0, 255))
+        cv.line(img, (rectangle_info[0], rectangle_info[1]), (rectangle_info[0]+rectangle_info[2], rectangle_info[1]), color, 1)
+        cv.line(img, (rectangle_info[0], rectangle_info[1]), (rectangle_info[0], rectangle_info[1]+rectangle_info[3]), color, 1)
 
         # bottom right corner
-        cv.line(img_scale, (rectangle_info[0]+rectangle_info[2], rectangle_info[1]+rectangle_info[3]), (rectangle_info[0]+rectangle_info[2], rectangle_info[1]), (0, 0, 255))
-        cv.line(img_scale, (rectangle_info[0]+rectangle_info[2], rectangle_info[1]+rectangle_info[3]), (rectangle_info[0], rectangle_info[1]+rectangle_info[3]), (0, 0, 255))
-    # cv.drawContours(img_scale, contours, -1, (0,255,0), 3)
+        cv.line(img, (rectangle_info[0]+rectangle_info[2], rectangle_info[1]+rectangle_info[3]), (rectangle_info[0]+rectangle_info[2], rectangle_info[1]), color, 1)
+        cv.line(img, (rectangle_info[0]+rectangle_info[2], rectangle_info[1]+rectangle_info[3]), (rectangle_info[0], rectangle_info[1]+rectangle_info[3]), color, 1)
+
+    # scale the image down
+    scale = 0.5
+    img_scale = cv.resize(img, (round(img_width*scale), round(img_height*scale)))
     # Show images.
     cv.imshow(window_name, img_scale)
     # Check periodically to see if any key is pressed.
