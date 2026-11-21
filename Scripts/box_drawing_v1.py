@@ -115,7 +115,7 @@ for img_name in files:
     min_width_scalar = 0.005
     min_height = round(img_height*min_height_scalar)
     min_width = round(img_width*min_width_scalar)
-    print(f"min_height: {min_height}| min_width: {min_width} | horizon_Y: {horizon}")
+    print(f"min_width: {min_width} | min_height: {min_height} | horizon_Y: {horizon}")
 
     for index, contour in enumerate(contours):
         color = (0, 255, 255)
@@ -134,7 +134,7 @@ for img_name in files:
         max_aspect_ratio = 2
         min_aspect_ratio = 0.2
 
-        # filter the rectangles that are too small
+        # # filter the rectangles that are too small
         if (height < min_height) or (width < min_width):
             continue
         # Filter the rectangles that are above our horizon line
@@ -145,7 +145,7 @@ for img_name in files:
             continue
 
 
-        print(f"W: {width} | H: {height} | A:{area} | AR: {rect_aspect_ratio} | Y: {rectangle_info[1]}")
+        print(f"W: {width} | H: {height} | A:{area} | AR: {rect_aspect_ratio} | Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*border)))*100}")
 
         # If they fit the criteria add it to the list
         rect_bounds.append(rectangle_info)
