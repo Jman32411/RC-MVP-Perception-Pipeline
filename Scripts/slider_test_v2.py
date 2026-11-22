@@ -56,6 +56,7 @@ cv.namedWindow(window_name)
 
 # Put the sliders into the window
 #* REMINDER OpenCV uses H: 0-179, S: 0-255, V: 0-255
+# YELLOW VALUES
 cv.createTrackbar('H_lower', window_name, 15, 179, nothing)
 cv.createTrackbar('S_lower', window_name, 140, 255, nothing)
 cv.createTrackbar('V_lower', window_name, 30, 255, nothing)
@@ -67,6 +68,21 @@ cv.createTrackbar('V_upper', window_name, 255, 255, nothing)
 cv.createTrackbar('Hue_scale', window_name, 12, 100, nothing)
 cv.createTrackbar('Sat_scale', window_name, 3, 100, nothing)
 cv.createTrackbar('Val_scale', window_name, 15, 100, nothing)
+
+
+
+# BLUE VALUES
+cv.createTrackbar('H_lower', window_name, 90, 179, nothing)
+cv.createTrackbar('S_lower', window_name, 255, 255, nothing)
+cv.createTrackbar('V_lower', window_name, 255, 255, nothing)
+
+cv.createTrackbar('H_upper', window_name, 116, 179, nothing)
+cv.createTrackbar('S_upper', window_name, 255, 255, nothing)
+cv.createTrackbar('V_upper', window_name, 255, 255, nothing)
+
+cv.createTrackbar('Hue_scale', window_name, 19, 100, nothing)
+cv.createTrackbar('Sat_scale', window_name, 3, 100, nothing)
+cv.createTrackbar('Val_scale', window_name, 20, 100, nothing)
 
 data_dir = r"Data\fsoco_sample"
 # files = ["amz_00075.jpg", "amz_00016.jpg", "amz_00588.jpg", "ff_00006.png", "ff_00258.png", "mms_00614.jpg"]

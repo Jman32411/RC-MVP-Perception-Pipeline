@@ -124,11 +124,7 @@ def merge_cone_boxes(boxes, max_gap=0.5, max_overlap=0.2, tol=2):
     return merged
 
 
-def get_small_cone_boxes(image_mat: np.ndarray, horizon: int, ):
-    yellow_mask = get_yellow_mask(image_mat)
-    yellow_contours = find_contours(yellow_mask)
-
-    cv.line(image_mat, (border, horizon), (img_width-border, horizon), (0, 0, 255), 2)
+def get_small_cone_boxes(contours: np.ndarray, horizon: int):
     
     # initialize empty lists
     rect_bounds = []
@@ -140,7 +136,7 @@ def get_small_cone_boxes(image_mat: np.ndarray, horizon: int, ):
     min_width = round(img_width*min_width_scalar)
     print(f"min_width: {min_width} | min_height: {min_height} | horizon_Y: {horizon}")
 
-    for contour in yellow_contours:
+    for contour in contours:
         # generate the bounding rectangles around each polygonal contour
         # Returns (top left corner) x, y, width, height
         contour_area = cv.contourArea(contour)
