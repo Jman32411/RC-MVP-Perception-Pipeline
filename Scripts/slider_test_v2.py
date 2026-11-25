@@ -85,15 +85,16 @@ cv.createTrackbar('Sat_scale', window_name, 3, 100, nothing)
 cv.createTrackbar('Val_scale', window_name, 20, 100, nothing)
 
 data_dir = r"Data\fsoco_sample"
+data_dir = r"Data\ampera"
 # files = ["amz_00075.jpg", "amz_00016.jpg", "amz_00588.jpg", "ff_00006.png", "ff_00258.png", "mms_00614.jpg"]
-files = os.listdir(rf"{data_dir}\images")
+files = os.listdir(rf"{data_dir}\img")
 
 # Iterate through all files in test folder
 for img_name in files:
     key_pressed = cv.waitKey(1)
     while key_pressed == -1:
         # get the image path
-        img_path = rf"{data_dir}\images\{img_name}"
+        img_path = rf"{data_dir}\img\{img_name}"
 
         # read the image
         img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)

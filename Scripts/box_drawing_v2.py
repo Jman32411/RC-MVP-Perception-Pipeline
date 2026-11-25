@@ -154,9 +154,12 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int):
     print(f"Frame: {img_width}x{img_height}")
 
     min_height_scalar = 0.01
-    min_width_scalar = 0.0047
+    min_width_scalar = 0.003
     min_height = round(img_height*min_height_scalar)
     min_width = round(img_width*min_width_scalar)
+    min_area_ratio = 0.27
+    max_aspect_ratio = 2
+    min_aspect_ratio = 0.2
     print(f"min_width: {min_width} | min_height: {min_height} | horizon_Y: {horizon}")
 
     for contour in contours:
@@ -170,31 +173,27 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int):
         height = rectangle_info[3]
         area = height*width
         rect_aspect_ratio = width/height
-        min_area_ratio = 0.27
-        max_aspect_ratio = 2
-        min_aspect_ratio = 0.2
 
-        # filter the rectangles that are too small
-        if (height < min_height) or (width < min_width):
-            continue
         # Filter the rectangles that are above our horizon line
         if (rectangle_info[1]+height<=horizon):
             continue
-        # Filter the rectangles that are too wide/thin
+        # filter the rectangles that are too thin or flat (size)
+        if (height < min_height) or (width < min_width):
+            continue
+        # Filter the rectangles that are too wide/thin (ratio)
         if (rect_aspect_ratio>= max_aspect_ratio) or (rect_aspect_ratio <= min_aspect_ratio):
             continue
-        # Filter based on contour/rectangle area
+        # Filter based on contour/rectangle area (actual color ratio of segment)
         if (contour_area/area < min_area_ratio):
             continue
 
-        print(f"W: {width} | H: {height} |AR: {rect_aspect_ratio}")
-        print(f"rect_Area:{area} | cont_area: {contour_area} | cont/rect: {contour_area/area}")
-        print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*border)))*100}\n")
+        # print(f"W: {width} | H: {height} |AR: {rect_aspect_ratio}")
+        # print(f"rect_Area:{area} | cont_area: {contour_area} | cont/rect: {contour_area/area}")
+        # print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*border)))*100}")
 
         # If they fit the criteria add it to the list
         rect_bounds.append(rectangle_info)
     rect_bounds = merge_cone_boxes(rect_bounds, 1, 1, 10)
-    return rect_bounds
 
 
 # clear terminal
@@ -206,17 +205,29 @@ window_name = "Contour Overlay"
 cv.namedWindow(window_name)
 
 
-data_dir = r"Data\fsoco_sample"
-files = os.listdir(rf"{data_dir}\images")
+data_index = 0
+input_data = [
+    {"directory": "ampera", "horizon_percent": 0.1, "scale_factor": 0.377},
+    {"directory": "aristurtle", "horizon_percent": 0.05, "scale_factor": 0.366},
+    {"directory": "bauman", "horizon_percent": 0.05, "scale_factor": 0.377}, 
+]
+
+
+# data_dir = r"Data\fsoco_sample"
+data_dir = rf"Data\{input_data[data_index]["directory"]}"
+
+
+
+files = os.listdir(rf"{data_dir}\img")
 yellow_color = (0, 255, 255)
 blue_color = (255, 0, 0)
 
 # Iterate through all files in test folder
 for img_name in files:
-    
+    print(img_name)
 
     # get the image path
-    img_path = rf"{data_dir}\images\{img_name}"
+    img_path = rf"{data_dir}\img\{img_name}"
 
     # read the image
     img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
@@ -224,39 +235,45 @@ for img_name in files:
     # get image dimensions
     img_height, img_width, channels = img.shape
     border = 140
-    horizon = round(img_height/2.75)
+    img_height -= border*2
+    img_width -= border*2
+    horizon = border + round((img_height-(2*border))*input_data[data_index]["horizon_percent"])
+
 
     yellow_mask = get_yellow_mask(img)
     yellow_contours = find_contours(yellow_mask)
     blue_mask = get_blue_mask(img)
     blue_contours = find_contours(blue_mask)
-    cv.line(img, (border, horizon), (img_width-border, horizon), (0, 0, 255), 2)
 
     # get yellow bounding boxes
+    print("YELLOW")
     yellow_rect_bounds = get_small_cone_boxes(yellow_contours, horizon)
     for yellow_rectangle_info in yellow_rect_bounds:
         # draw the rect
         # top left corner
-        cv.line(img, (yellow_rectangle_info[0], yellow_rectangle_info[1]), (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]), yellow_color, 1)
-        cv.line(img, (yellow_rectangle_info[0], yellow_rectangle_info[1]), (yellow_rectangle_info[0], yellow_rectangle_info[1]+yellow_rectangle_info[3]), yellow_color, 1)
+        cv.line(img, (yellow_rectangle_info[0], yellow_rectangle_info[1]), (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]), yellow_color, 2)
+        cv.line(img, (yellow_rectangle_info[0], yellow_rectangle_info[1]), (yellow_rectangle_info[0], yellow_rectangle_info[1]+yellow_rectangle_info[3]), yellow_color, 2)
 
         # bottom right corner
-        cv.line(img, (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]+yellow_rectangle_info[3]), (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]), yellow_color, 1)
-        cv.line(img, (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]+yellow_rectangle_info[3]), (yellow_rectangle_info[0], yellow_rectangle_info[1]+yellow_rectangle_info[3]), yellow_color, 1)
+        cv.line(img, (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]+yellow_rectangle_info[3]), (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]), yellow_color, 2)
+        cv.line(img, (yellow_rectangle_info[0]+yellow_rectangle_info[2], yellow_rectangle_info[1]+yellow_rectangle_info[3]), (yellow_rectangle_info[0], yellow_rectangle_info[1]+yellow_rectangle_info[3]), yellow_color, 2)
 
 
     # get blue bounding boxes
+    
+    print("\nBLUE")
     blue_rect_bounds = get_small_cone_boxes(blue_contours, horizon)
     for blue_rectangle_info in blue_rect_bounds:
         # draw the rect
         # top left corner
-        cv.line(img, (blue_rectangle_info[0], blue_rectangle_info[1]), (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]), blue_color, 1)
-        cv.line(img, (blue_rectangle_info[0], blue_rectangle_info[1]), (blue_rectangle_info[0], blue_rectangle_info[1]+blue_rectangle_info[3]), blue_color, 1)
+        cv.line(img, (blue_rectangle_info[0], blue_rectangle_info[1]), (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]), blue_color, 2)
+        cv.line(img, (blue_rectangle_info[0], blue_rectangle_info[1]), (blue_rectangle_info[0], blue_rectangle_info[1]+blue_rectangle_info[3]), blue_color, 2)
 
         # bottom right corner
-        cv.line(img, (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]+blue_rectangle_info[3]), (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]), blue_color, 1)
-        cv.line(img, (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]+blue_rectangle_info[3]), (blue_rectangle_info[0], blue_rectangle_info[1]+blue_rectangle_info[3]), blue_color, 1)
+        cv.line(img, (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]+blue_rectangle_info[3]), (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]), blue_color, 2)
+        cv.line(img, (blue_rectangle_info[0]+blue_rectangle_info[2], blue_rectangle_info[1]+blue_rectangle_info[3]), (blue_rectangle_info[0], blue_rectangle_info[1]+blue_rectangle_info[3]), blue_color, 2)
 
+    cv.line(img, (border, horizon), (img_width+border, horizon), (0, 0, 255), 2)
     
     # scale the image down
     scale = 0.5
