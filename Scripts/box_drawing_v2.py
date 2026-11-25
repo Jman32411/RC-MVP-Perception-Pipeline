@@ -194,6 +194,7 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int):
         # If they fit the criteria add it to the list
         rect_bounds.append(rectangle_info)
     rect_bounds = merge_cone_boxes(rect_bounds, 1, 1, 10)
+    return(rect_bounds)
 
 
 # clear terminal
