@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 import os
 import time
+import json
 
 def nothing(x):
    pass
@@ -155,8 +156,8 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int, cone_scale_factor: 
 
     min_height_scalar = 0.01
     min_width_scalar = 0.003
-    min_height = round(img_height*min_height_scalar)
-    min_width = round(img_width*min_width_scalar)
+    min_height = round(frame_height*min_height_scalar)
+    min_width = round(frame_width*min_width_scalar)
     min_area_ratio = 0.27
     max_aspect_ratio = 2
     min_aspect_ratio = 0.2
@@ -275,72 +276,78 @@ def process_frame(frame: np.ndarray, cone_scale_factor: float):
 
 # clear terminal
 os.system('cls||clear')
-
-# Make sure output folder exists
-root = os.getcwd()
-make_folders(root)
-
-input_folder = rf"input\img"
-output_root = rf"output"
-
 # img_name = input("Please enter the NAME of the file (including extension) you wish to read: ")
 # horizon_percent = float(input("Please enter the percentage (in decimal) where the horizon line falls: "))
 # scale_factor = float(input("Please enter the cone scaling factor from the horizon: "))
 
-img_name = "video2.mp4"
-img_name = "amz_00805.png"
+file_name = "video2.mp4"
+file_name = "amz_00805.png"
 scale_factor_error = 1
 horizon_percent = 0.375
 scale_factor = 0.377
 y_border = 0
 x_border = 0
+
+
+# Make sure output folder exists
+root = os.getcwd()
+make_folders(root)
+
 # get the image path
-img_path = f"{input_folder}\\{img_name}"
-cap = cv.VideoCapture(img_path)
+input_folder = rf"input\img"
+output_root = rf"output"
+input_file_path = f"{input_folder}\\{file_name}"
+output_image_path = f"{output_root}\\img\\{file_name}"
+output_data_path = f"{output_root}\\ann\\{file_name}"
+cap = cv.VideoCapture(input_file_path)
 
 # Verify the file opened properly
 if not cap.isOpened():
-    input("Error: Could not open video.")
+    input("Error: Could not open video. Press enter to end the program. ")
+else:
+    prev_time = time.perf_counter()
+    while True:
+        # Read the next frame
+        ret, frame = cap.read()
+        # Stop the loop if there are no frames left (end of video)
+        if not ret:
+            break
 
-prev_time = time.perf_counter()
-while True:
-    # Read the next frame
-    ret, frame = cap.read()
-    # Stop the loop if there are no frames left (end of video)
-    if not ret:
-        break
+        frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
+        full_data = []
 
-    img = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
-    full_data = []
+        # get image dimensions
+        frame_height, frame_width, channels = frame.shape
 
-    # get image dimensions
-    img_height, img_width, channels = img.shape
+        frame_height -= y_border*2
+        frame_width -= x_border*2
+        horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
 
-    img_height -= y_border*2
-    img_width -= x_border*2
-    horizon = y_border + round((img_height-(2*y_border))*horizon_percent)
-
-    # Process the single frame
-    img, frame_data = process_frame(img, scale_factor)
+        # Process the single frame
+        frame, frame_data = process_frame(frame, scale_factor)
 
 
-    # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.
-    # if it is a video, then it will be a list of all data for each frame.
-    full_data.append(frame_data)
-    cv.line(img, (x_border, horizon), (img_width+x_border, horizon), (0, 0, 255), 2)
+        # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.
+        # if it is a video, then it will be a list of all data for each frame.
+        full_data.append(frame_data)
+        cv.line(frame, (x_border, horizon), (frame_width+x_border, horizon), (0, 0, 255), 2)
 
-    # Display the frame in a window
-    cv.imshow(img_name, img)
+        # Display the frame in a window
+        cv.imshow(file_name, frame)
 
-    # wait for frame to display
-    cv.waitKey(1)
+        # wait for frame to display
+        cv.waitKey(1)
 
-    # Just an FPS calculator
-    curr_time = time.perf_counter()
-    fps = 1 / (curr_time - prev_time)
-    prev_time = curr_time
-    os.system('cls||clear')
-    print(fps)
+        # Just an FPS calculator
+        curr_time = time.perf_counter()
+        fps = 1 / (curr_time - prev_time)
+        prev_time = curr_time
+        os.system('cls||clear')
+        print(fps)
 
-# Hang on the last frame until user presses a key
-cv.waitKey(0)
+    # Write data to file
+    with open(f"{output_data_path}.json", "w", encoding="utf-8") as file:
+        json.dump(full_data, file, indent=4)
+
+    # Hang on the last frame until user presses a key
+    cv.waitKey(0)
