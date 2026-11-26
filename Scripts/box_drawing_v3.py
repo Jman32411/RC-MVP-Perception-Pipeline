@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import os
+import time
 
 def nothing(x):
    pass
@@ -195,7 +196,7 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int, cone_scale_factor: 
 
         # print(f"W: {width} | H: {height} |AR: {rect_aspect_ratio}")
         # print(f"rect_Area:{area} | cont_area: {contour_area} | cont/rect: {contour_area/area}")
-        # print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*border)))*100}")
+        # print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*y_border)))*100}")
 
     # Merge above boxes with the ones below
     rect_bounds = merge_cone_boxes(rect_bounds, 1, 1, 10)
@@ -203,9 +204,9 @@ def get_small_cone_boxes(contours: np.ndarray, horizon: int, cone_scale_factor: 
     # As much as I hate it, to effectively utilize the scaling from the horizon, we need to do a second round of filtering
     filtered_rect_bounds = []
     for bound in rect_bounds:
-        # check to see if the the bounding box height is larger or smaller than (scalefactor * height+border) +- error  
+        # check to see if the the bounding box height is larger or smaller than (scalefactor * height+y_border) +- error  
         # Stricter for for the lower bound
-        if (((cone_scale_factor+error)*(bound[1]-border))<bound[3]) or (((cone_scale_factor-(error/2.5))*(bound[1]-border))>bound[3]):
+        if (((cone_scale_factor+error)*(bound[1]-y_border))<bound[3]) or (((cone_scale_factor-(error/2.5))*(bound[1]-y_border))>bound[3]):
             continue
 
 
@@ -240,8 +241,6 @@ def draw_boxes(input_image: np.ndarray, box_data: list):
         cv.line(input_image, (bounds[0]+bounds[2], bounds[1]+bounds[3]), (bounds[0]+bounds[2], bounds[1]), color_key[color], thickness)
         cv.line(input_image, (bounds[0]+bounds[2], bounds[1]+bounds[3]), (bounds[0], bounds[1]+bounds[3]), color_key[color], thickness)
     return (input_image)
-        
-
 
 def make_folders(root: str):
     subfolders = [
@@ -257,6 +256,23 @@ def make_folders(root: str):
         if (not os.path.exists(f"{root}{folder}")):
             os.mkdir(f"{root}{folder}")
 
+def process_frame(frame: np.ndarray, cone_scale_factor: float):
+    cone_data = []
+    # Process each color we need
+    yellow_mask = get_yellow_mask(frame)
+    yellow_contours = find_contours(yellow_mask)
+    blue_mask = get_blue_mask(frame)
+    blue_contours = find_contours(blue_mask)
+
+    # get yellow bounding boxes
+    cone_data += get_small_cone_boxes(yellow_contours, horizon, cone_scale_factor, scale_factor_error, "yellow")
+    # get blue bounding boxes
+    cone_data += get_small_cone_boxes(blue_contours, horizon, cone_scale_factor, scale_factor_error, "blue")
+
+    # draw boxes
+    draw_boxes(frame, cone_data)
+    return (frame, cone_data)
+
 # clear terminal
 os.system('cls||clear')
 
@@ -264,63 +280,67 @@ os.system('cls||clear')
 root = os.getcwd()
 make_folders(root)
 
+input_folder = rf"input\img"
+output_root = rf"output"
 
-data_index = 1
-input_data = [
-    {"directory": "ampera", "horizon_percent": 0.1, "scale_factor": 0.377},
-    {"directory": "aristurtle", "horizon_percent": 0.05, "scale_factor": 0.366},
-    {"directory": "bauman", "horizon_percent": 0.05, "scale_factor": 0.377}, 
-]
-scale_factor_error = 0.4
+# img_name = input("Please enter the NAME of the file (including extension) you wish to read: ")
+# horizon_percent = float(input("Please enter the percentage (in decimal) where the horizon line falls: "))
+# scale_factor = float(input("Please enter the cone scaling factor from the horizon: "))
 
+img_name = "video2.mp4"
+img_name = "amz_00805.png"
+scale_factor_error = 1
+horizon_percent = 0.375
+scale_factor = 0.377
+y_border = 0
+x_border = 0
+# get the image path
+img_path = f"{input_folder}\\{img_name}"
+cap = cv.VideoCapture(img_path)
 
-data_dir = rf"input\img\{input_data[data_index]["directory"]}"
-data_dir = rf"Data\{input_data[data_index]["directory"]}"
-output_dir = rf"Output"
+# Verify the file opened properly
+if not cap.isOpened():
+    input("Error: Could not open video.")
 
-files = os.listdir(rf"{data_dir}\img")
-yellow_color = (0, 255, 255)
-blue_color = (255, 0, 0)
+prev_time = time.perf_counter()
+while True:
+    # Read the next frame
+    ret, frame = cap.read()
+    # Stop the loop if there are no frames left (end of video)
+    if not ret:
+        break
 
-# Iterate through all files in test folder
-for img_name in files:
-    cone_data = []
-    # get the image path
-    img_path = rf"{data_dir}\img\{img_name}"
-
-    # read the image
-    img = cv.imread(img_path, cv.IMREAD_COLOR_BGR)
+    img = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
+    full_data = []
 
     # get image dimensions
     img_height, img_width, channels = img.shape
-    border = 140
-    img_height -= border*2
-    img_width -= border*2
-    horizon = border + round((img_height-(2*border))*input_data[data_index]["horizon_percent"])
+
+    img_height -= y_border*2
+    img_width -= x_border*2
+    horizon = y_border + round((img_height-(2*y_border))*horizon_percent)
+
+    # Process the single frame
+    img, frame_data = process_frame(img, scale_factor)
 
 
-    yellow_mask = get_yellow_mask(img)
-    yellow_contours = find_contours(yellow_mask)
-    blue_mask = get_blue_mask(img)
-    blue_contours = find_contours(blue_mask)
+    # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.
+    # if it is a video, then it will be a list of all data for each frame.
+    full_data.append(frame_data)
+    cv.line(img, (x_border, horizon), (img_width+x_border, horizon), (0, 0, 255), 2)
 
-    # get yellow bounding boxes
-    cone_data += get_small_cone_boxes(yellow_contours, horizon, input_data[data_index]["scale_factor"], scale_factor_error, "yellow")
-    # get blue bounding boxes
-    cone_data += get_small_cone_boxes(blue_contours, horizon, input_data[data_index]["scale_factor"], scale_factor_error, "blue")
+    # Display the frame in a window
+    cv.imshow(img_name, img)
 
+    # wait for frame to display
+    cv.waitKey(1)
 
-    print(cone_data)
-    draw_boxes(img, cone_data)
+    # Just an FPS calculator
+    curr_time = time.perf_counter()
+    fps = 1 / (curr_time - prev_time)
+    prev_time = curr_time
+    os.system('cls||clear')
+    print(fps)
 
-    
-    # img = cv.line(img, (border, horizon), (img_width+border, horizon), (0, 0, 255), 2)
-    
-    # scale the image down
-    scale = 0.5
-    img_scale = cv.resize(img, (round(img_width*scale), round(img_height*scale)))
-    # Show images.
-    cv.imshow(img_name, img_scale)
-    # Check periodically to see if any key is pressed.
-    key_pressed = cv.waitKey(0)
-    cv.destroyWindow(img_name)
+# Hang on the last frame until user presses a key
+cv.waitKey(0)
