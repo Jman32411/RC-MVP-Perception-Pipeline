@@ -46,21 +46,15 @@ def normalize_saturation(in_img: np.ndarray, s_scale: float, v_scale):
     # We also have to change the data type back to the original type
     return cv.cvtColor(cv.merge([h, s, v]).astype(np.uint8), cv.COLOR_HSV2BGR)
 
-def get_yellow_mask(image_mat: np.ndarray):
-    # Normalize HSV
-    # Use the scale values found in previous tests (such as combination_test_v1)
-    hue_scale = 1.2
-    sat_scale = 0.3
-    val_scale = 1.5
-
-    # apply the normalization
+def get_mask(image_mat: np.ndarray, hue_scale: float, sat_scale: float, val_scale: float, lower_bound: list, upper_bound: list):
+    # apply the normalization to HSV
     norm_img = normalize_hue(image_mat, hue_scale)
     norm_img = normalize_saturation(norm_img, sat_scale, val_scale)
 
     hsv = cv.cvtColor(norm_img, cv.COLOR_BGR2HSV)
 
-    lower_bound = np.array([15, 140, 30])
-    upper_bound = np.array([30, 255, 255])
+    lower_bound = np.array(lower_bound)
+    upper_bound = np.array(upper_bound)
 
     # get the filter
     filter = cv.inRange(hsv, lower_bound, upper_bound)
@@ -68,31 +62,6 @@ def get_yellow_mask(image_mat: np.ndarray):
     # use a bitwise and to look for points in our image that ONLY fall between our bounds
     mask = cv.bitwise_and(norm_img, norm_img, mask=filter)
     return mask
-
-
-def get_blue_mask(image_mat: np.ndarray):
-    # Normalize HSV
-    # Use the scale values found in previous tests (such as combination_test_v1)
-    hue_scale = 1.9
-    sat_scale = 0.3
-    val_scale = 2.0
-
-    # apply the normalization
-    norm_img = normalize_hue(image_mat, hue_scale)
-    norm_img = normalize_saturation(norm_img, sat_scale, val_scale)
-
-    hsv = cv.cvtColor(norm_img, cv.COLOR_BGR2HSV)
-
-    lower_bound = np.array([90, 255, 255])
-    upper_bound = np.array([116, 255, 255])
-
-    # get the filter
-    filter = cv.inRange(hsv, lower_bound, upper_bound)
-
-    # use a bitwise and to look for points in our image that ONLY fall between our bounds
-    mask = cv.bitwise_and(norm_img, norm_img, mask=filter)
-    return mask
-
 
 def find_contours(image_mat: np.ndarray):
     # Apply a grey coloring to the mask (to make it all one color)
@@ -150,75 +119,75 @@ def merge_cone_boxes(boxes, max_gap=0.5, max_overlap=0.2, tol=2):
     merged += [tuple(map(int, b[k])) for k in np.flatnonzero(~used)]
     return merged
 
-def get_small_cone_boxes(contours: np.ndarray, horizon: int, cone_scale_factor: float, error: float, color: str):
-    # initialize empty lists
-    rect_bounds = []
+def get_cone_boxes(contours: np.ndarray, horizon: int, error: float, cone_scale_factor: float, color: str, size: str):
+    if size == "small":
+        # initialize empty lists
+        rect_bounds = []
+        min_height_scalar = 0.01
+        min_width_scalar = 0.003
+        min_height = round(frame_height*min_height_scalar)
+        min_width = round(frame_width*min_width_scalar)
+        min_area_ratio = 0.27
+        max_aspect_ratio = 2
+        min_aspect_ratio = 0.2
+        # print(f"Frame: {img_width}x{img_height}")
+        # print(f"min_width: {min_width} | min_height: {min_height} | horizon_Y: {horizon}")
 
-    min_height_scalar = 0.01
-    min_width_scalar = 0.003
-    min_height = round(frame_height*min_height_scalar)
-    min_width = round(frame_width*min_width_scalar)
-    min_area_ratio = 0.27
-    max_aspect_ratio = 2
-    min_aspect_ratio = 0.2
-    # print(f"Frame: {img_width}x{img_height}")
-    # print(f"min_width: {min_width} | min_height: {min_height} | horizon_Y: {horizon}")
+        for contour in contours:
+            # generate the bounding rectangles around each polygonal contour
+            # Returns (top left corner) x, y, width, height
+            contour_area = cv.contourArea(contour)
+            rectangle_info = cv.boundingRect(contour)
 
-    for contour in contours:
-        # generate the bounding rectangles around each polygonal contour
-        # Returns (top left corner) x, y, width, height
-        contour_area = cv.contourArea(contour)
-        rectangle_info = cv.boundingRect(contour)
+            # calculate the area using the width and height values
+            width = rectangle_info[2]
+            height = rectangle_info[3]
+            area = height*width
+            rect_aspect_ratio = width/height
 
-        # calculate the area using the width and height values
-        width = rectangle_info[2]
-        height = rectangle_info[3]
-        area = height*width
-        rect_aspect_ratio = width/height
+            # Filter the rectangles that are above our horizon line
+            if (rectangle_info[1]+height<=horizon):
+                continue
+            
+            # # filter the rectangles that are too thin or flat (size)
+            # if (height < min_height) or (width < min_width):
+            #     continue
 
-        # Filter the rectangles that are above our horizon line
-        if (rectangle_info[1]+height<=horizon):
-            continue
-        
-        # # filter the rectangles that are too thin or flat (size)
-        # if (height < min_height) or (width < min_width):
-        #     continue
+            # Filter the rectangles that are too wide/thin (ratio)
+            if (rect_aspect_ratio>= max_aspect_ratio) or (rect_aspect_ratio <= min_aspect_ratio):
+                continue
 
-        # Filter the rectangles that are too wide/thin (ratio)
-        if (rect_aspect_ratio>= max_aspect_ratio) or (rect_aspect_ratio <= min_aspect_ratio):
-            continue
+            # Filter based on contour/rectangle area (actual color ratio of segment)
+            if (contour_area/area < min_area_ratio):
+                continue
 
-        # Filter based on contour/rectangle area (actual color ratio of segment)
-        if (contour_area/area < min_area_ratio):
-            continue
+            # If they fit the criteria add it to the list
+            rect_bounds.append(rectangle_info)
 
-        # If they fit the criteria add it to the list
-        rect_bounds.append(rectangle_info)
+            # print(f"W: {width} | H: {height} |AR: {rect_aspect_ratio}")
+            # print(f"rect_Area:{area} | cont_area: {contour_area} | cont/rect: {contour_area/area}")
+            # print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*y_border)))*100}")
 
-        # print(f"W: {width} | H: {height} |AR: {rect_aspect_ratio}")
-        # print(f"rect_Area:{area} | cont_area: {contour_area} | cont/rect: {contour_area/area}")
-        # print(f"Y: {rectangle_info[1]} | %: {((rectangle_info[1]-horizon)/(img_height-(2*y_border)))*100}")
+        # Merge above boxes with the ones below
+        rect_bounds = merge_cone_boxes(rect_bounds, 1, 1, 10)
 
-    # Merge above boxes with the ones below
-    rect_bounds = merge_cone_boxes(rect_bounds, 1, 1, 10)
-
-    # As much as I hate it, to effectively utilize the scaling from the horizon, we need to do a second round of filtering
-    filtered_rect_bounds = []
-    for bound in rect_bounds:
-        # check to see if the the bounding box height is larger or smaller than (scalefactor * height+y_border) +- error  
-        # Stricter for for the lower bound
-        if (((cone_scale_factor+error)*(bound[1]-y_border))<bound[3]) or (((cone_scale_factor-(error/2.5))*(bound[1]-y_border))>bound[3]):
-            continue
+        # As much as I hate it, to effectively utilize the scaling from the horizon, we need to do a second round of filtering
+        filtered_rect_bounds = []
+        for bound in rect_bounds:
+            # check to see if the the bounding box height is larger or smaller than (scalefactor * height+y_border) +- error  
+            # Stricter for for the lower bound
+            if (((cone_scale_factor+error)*(bound[1]-y_border))<bound[3]) or (((cone_scale_factor-(error/2.5))*(bound[1]-y_border))>bound[3]):
+                continue
 
 
-    # bounding box follows the format: {"color": ____, "box": [x, y, width, height]}
+        # bounding box follows the format: {"color": ____, "box": [x, y, width, height]}
 
-        filtered_rect_bounds.append(
-            {
-                "color": color,
-                "box": bound,
-            }
-        )
+            filtered_rect_bounds.append(
+                {
+                    "color": color,
+                    "box": bound,
+                }
+            )
     return(filtered_rect_bounds)
 
 def draw_boxes(input_image: np.ndarray, box_data: list):
@@ -257,18 +226,25 @@ def make_folders(root: str):
         if (not os.path.exists(f"{root}{folder}")):
             os.mkdir(f"{root}{folder}")
 
-def process_frame(frame: np.ndarray, cone_scale_factor: float):
+def process_frame(frame: np.ndarray, constants: list):
     cone_data = []
-    # Process each color we need
-    yellow_mask = get_yellow_mask(frame)
-    yellow_contours = find_contours(yellow_mask)
-    blue_mask = get_blue_mask(frame)
-    blue_contours = find_contours(blue_mask)
+    for cone_type in constants:
+        # Get the necessary data for each cone type
+        color = cone_type["color"]
+        cone_scale_factor = cone_type["cone_scale_factor"]
+        size = cone_type["size"]
+        hue_scale = cone_type["hue_scale"]
+        sat_scale = cone_type["sat_scale"]
+        val_scale = cone_type["val_scale"]
+        lower_bound = cone_type["lower_bound"]
+        upper_bound = cone_type["upper_bound"]
 
-    # get yellow bounding boxes
-    cone_data += get_small_cone_boxes(yellow_contours, horizon, cone_scale_factor, scale_factor_error, "yellow")
-    # get blue bounding boxes
-    cone_data += get_small_cone_boxes(blue_contours, horizon, cone_scale_factor, scale_factor_error, "blue")
+        # Process the specific color
+        mask = get_mask(frame, hue_scale, sat_scale, val_scale, lower_bound, upper_bound)
+        contour = find_contours(mask)
+
+        # Use constants to get the data of each cone
+        cone_data += get_cone_boxes(contour, horizon, scale_factor_error, cone_scale_factor, color, size)
 
     # draw boxes
     draw_boxes(frame, cone_data)
@@ -281,7 +257,7 @@ os.system('cls||clear')
 # scale_factor = float(input("Please enter the cone scaling factor from the horizon: "))
 
 file_name = "video2.mp4"
-file_name = "amz_00805.png"
+# file_name = "amz_00805.png"
 scale_factor_error = 1
 horizon_percent = 0.375
 scale_factor = 0.377
@@ -300,6 +276,9 @@ input_file_path = f"{input_folder}\\{file_name}"
 output_image_path = f"{output_root}\\img\\{file_name}"
 output_data_path = f"{output_root}\\ann\\{file_name}"
 cap = cv.VideoCapture(input_file_path)
+
+with open("constants.json", "r", encoding="utf-8") as file:
+    constants = json.load(file)
 
 # Verify the file opened properly
 if not cap.isOpened():
@@ -324,7 +303,7 @@ else:
         horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
 
         # Process the single frame
-        frame, frame_data = process_frame(frame, scale_factor)
+        frame, frame_data = process_frame(frame, constants)
 
 
         # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.

@@ -2,6 +2,6 @@
 *.img
 *.jpg
 *.png
-*.json
-input/img/video.mp4
-input/img/video2.mp4
+input/
+output/
+Data/
