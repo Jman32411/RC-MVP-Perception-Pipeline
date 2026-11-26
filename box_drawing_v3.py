@@ -291,7 +291,7 @@ else:
         # Stop the loop if there are no frames left (end of video)
         if not ret:
             break
-
+        # Change color to BGR scheme
         frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
         full_data = []
 
