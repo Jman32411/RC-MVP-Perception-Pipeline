@@ -3,9 +3,7 @@ import numpy as np
 import os
 import time
 import json
-
-def nothing(x):
-   pass
+import sys
 
 def normalize_hue(in_img: np.ndarray, scale_factor: float):
     # change the data type to float32 so that numpy doesn't get angry.
@@ -73,7 +71,8 @@ def find_contours(image_mat: np.ndarray):
     contours, hierarchy = cv.findContours(thresh, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
     return contours
 
-# courtesy of claude
+# I had a hard time of finding an efficient way to check box overlaps.
+# Code courtesy of Claude AI
 def merge_cone_boxes(boxes, max_gap=0.5, max_overlap=0.2, tol=2):
     """
     boxes: list of (x, y, w, h)
@@ -325,7 +324,7 @@ else:
         curr_time = time.perf_counter()
         fps = 1 / (curr_time - prev_time)
         prev_time = curr_time
-        os.system('cls||clear')
+        sys.stdout.write("\033c")
         print(fps)
 
     # Write data to file

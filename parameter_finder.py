@@ -226,8 +226,8 @@ def draw_boxes(input_image: np.ndarray, box_data: list, index: int):
         print(f"y_border: {y_border}    ")
         print(f"Horizon %: {horizon_percent}    ")
         print(f"cone_scale_factor: {bounds[3]/((bounds[1]+bounds[3])-horizon)}  ")
-        print(f"Expected height: {bounds[3]}    ")
-        print(f"y_position (bottom) from horizon: {(bounds[1]+bounds[3])-horizon}   ")
+        # print(f"Expected height: {bounds[3]}    ")
+        # print(f"y_position (bottom) from horizon: {(bounds[1]+bounds[3])-horizon}   ")
 
         cv.line(input_image, (bounds[0], bounds[1]), (bounds[0]+bounds[2], bounds[1]), color_key[color], thickness)
         cv.line(input_image, (bounds[0], bounds[1]), (bounds[0], bounds[1]+bounds[3]), color_key[color], thickness)
