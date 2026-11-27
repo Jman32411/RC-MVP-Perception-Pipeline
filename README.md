@@ -17,12 +17,12 @@ The main file-structure of this project is fairly simple.
 ***ROOT***  
 ├── input/  
 │&emsp;&emsp;└── img/  
-│&emsp;&emsp;&emsp;&emsp;&emsp;├── video.mp4  
-│&emsp;&emsp;&emsp;&emsp;&emsp;└── image.png  
+│&emsp;&emsp;&emsp;&emsp;&emsp;├── video_name.mp4  
+│&emsp;&emsp;&emsp;&emsp;&emsp;└── image_name.png  
 ├── output/  
 │&emsp;&emsp;├── ann/  
-│&emsp;&emsp; |&emsp;&emsp;&emsp;├── video.mp4.json   
-│&emsp;&emsp; |&emsp;&emsp;&emsp;└── image.png.json  
+│&emsp;&emsp; |&emsp;&emsp;&emsp;├── video_name.mp4.json   
+│&emsp;&emsp; |&emsp;&emsp;&emsp;└── image_name.png.json  
 │&emsp;&emsp;└── img/  
 ├── testing_scripts/  
 ├── box_drawing_v3.py  
