@@ -252,24 +252,30 @@ def process_frame(frame: np.ndarray, constants: list):
 
 # clear terminal
 os.system('cls||clear')
-# img_name = input("Please enter the NAME of the file (including extension) you wish to read: ")
-# horizon_percent = float(input("Please enter the percentage (in decimal) where the horizon line falls: "))
-# scale_factor = float(input("Please enter the cone scaling factor from the horizon: "))
+file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
 
-file_name = "video2.mp4"
-# file_name = "amz_00805.png"
+# Read the parameters Json (This is the stuff that changes on an image to image basis)
+with open("parameters.json", "r", encoding="utf-8") as file:
+    parameters = json.load(file)
+
+x_border = parameters["x_border"]
+y_border = parameters["y_border"]
+horizon_percent = parameters["horizon %"]
+scale_factor = parameters["cone_scale_factor"]
+
+
+# Read the constants Json (this contains all object deteciton parameters)
+with open("constants.json", "r", encoding="utf-8") as file:
+    constants = json.load(file)
+
 scale_factor_error = 1
-horizon_percent = 0.375
-scale_factor = 0.377
-y_border = 0
-x_border = 0
 
 
 # Make sure output folder exists
 root = os.getcwd()
 make_folders(root)
 
-# get the image path
+# get the file path
 input_folder = rf"input\img"
 output_root = rf"output"
 input_file_path = f"{input_folder}\\{file_name}"
@@ -277,8 +283,6 @@ output_image_path = f"{output_root}\\img\\{file_name}"
 output_data_path = f"{output_root}\\ann\\{file_name}"
 cap = cv.VideoCapture(input_file_path)
 
-with open("constants.json", "r", encoding="utf-8") as file:
-    constants = json.load(file)
 
 # Verify the file opened properly
 if not cap.isOpened():

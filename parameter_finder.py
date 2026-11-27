@@ -278,15 +278,14 @@ def process_frame(frame: np.ndarray, constants: list, box_index: int):
 
 # clear terminal
 os.system('cls||clear')
+file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
 
-file_name = "video2.mp4"
-file_name = "amz_00805.png"
+# Create the window with the filename
 cv.namedWindow(file_name)
-scale_factor_error = 1
-horizon_percent = 0.375
-scale_factor = 0.3
-y_border = 0
-x_border = 0
+
+# set our error to something large so that most cones get detected
+scale_factor_error = 10
+
 
 
 # Put the sliders into the window
