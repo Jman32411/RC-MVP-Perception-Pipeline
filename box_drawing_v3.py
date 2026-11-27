@@ -192,7 +192,7 @@ def get_cone_boxes(contours: np.ndarray, horizon: int, error: float, cone_scale_
 def draw_boxes(input_image: np.ndarray, box_data: list):
     thickness = 2
     color_key = {
-        "blue":(255, 0, 0),
+        "blue":(0, 180, 180),
         "yellow": (0, 255, 255),
     }
     # Each frame/box_data should be a list of dictionaries
@@ -248,88 +248,95 @@ def process_frame(frame: np.ndarray, constants: list):
     # draw boxes
     draw_boxes(frame, cone_data)
     return (frame, cone_data)
+try:
+    # Make sure output folder exists
+    # root = os.getcwd()
+    root = os.path.dirname(os.path.abspath(__file__))
+    # clear terminal
+    os.system('cls||clear')
+    file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
 
-# clear terminal
-os.system('cls||clear')
-file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
+    # Read the parameters Json (This is the stuff that changes on an image to image basis)
+    with open(f"{root}\\parameters.json", "r", encoding="utf-8") as file:
+        parameters = json.load(file)
 
-# Read the parameters Json (This is the stuff that changes on an image to image basis)
-with open("parameters.json", "r", encoding="utf-8") as file:
-    parameters = json.load(file)
-
-x_border = parameters["x_border"]
-y_border = parameters["y_border"]
-horizon_percent = parameters["horizon %"]
-scale_factor = parameters["cone_scale_factor"]
-
-
-# Read the constants Json (this contains all object deteciton parameters)
-with open("constants.json", "r", encoding="utf-8") as file:
-    constants = json.load(file)
-
-scale_factor_error = 1
+    x_border = parameters["x_border"]
+    y_border = parameters["y_border"]
+    horizon_percent = parameters["horizon %"]
+    scale_factor = parameters["cone_scale_factor"]
 
 
-# Make sure output folder exists
-root = os.getcwd()
-make_folders(root)
+    # Read the constants Json (this contains all object deteciton parameters)
+    with open(f"{root}\\constants.json", "r", encoding="utf-8") as file:
+        constants = json.load(file)
 
-# get the file path
-input_folder = rf"input\img"
-output_root = rf"output"
-input_file_path = f"{input_folder}\\{file_name}"
-output_image_path = f"{output_root}\\img\\{file_name}"
-output_data_path = f"{output_root}\\ann\\{file_name}"
-cap = cv.VideoCapture(input_file_path)
+    scale_factor_error = 1
 
 
-# Verify the file opened properly
-if not cap.isOpened():
-    input("Error: Could not open video. Press enter to end the program. ")
-else:
-    prev_time = time.perf_counter()
-    while True:
-        # Read the next frame
-        ret, frame = cap.read()
-        # Stop the loop if there are no frames left (end of video)
-        if not ret:
-            break
-        # Change color to BGR scheme
-        frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
-        full_data = []
+    make_folders(root)
 
-        # get image dimensions
-        frame_height, frame_width, channels = frame.shape
-
-        frame_height -= y_border*2
-        frame_width -= x_border*2
-        horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
-
-        # Process the single frame
-        frame, frame_data = process_frame(frame, constants)
+    # get the file path
+    input_folder = rf"{root}\input\img"
+    output_root = rf"{root}\output"
+    input_file_path = f"{input_folder}\\{file_name}"
+    output_image_path = f"{output_root}\\img\\{file_name}"
+    output_data_path = f"{output_root}\\ann\\{file_name}"
+    cap = cv.VideoCapture(input_file_path)
 
 
-        # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.
-        # if it is a video, then it will be a list of all data for each frame.
-        full_data.append(frame_data)
-        cv.line(frame, (x_border, horizon), (frame_width+x_border, horizon), (0, 0, 255), 2)
+    # Verify the file opened properly
+    if not cap.isOpened():
+        input("Error: Could not open video. Press enter to end the program. ")
+    else:
+        prev_time = time.perf_counter()
+        while True:
+            # Read the next frame
+            ret, frame = cap.read()
+            # Stop the loop if there are no frames left (end of video)
+            if not ret:
+                break
+            # Change color to BGR scheme
+            frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
+            full_data = []
 
-        # Display the frame in a window
-        cv.imshow(file_name, frame)
+            # get image dimensions
+            frame_height, frame_width, channels = frame.shape
 
-        # wait for frame to display
-        cv.waitKey(1)
+            frame_height -= y_border*2
+            frame_width -= x_border*2
+            horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
 
-        # Just an FPS calculator
-        curr_time = time.perf_counter()
-        fps = 1 / (curr_time - prev_time)
-        prev_time = curr_time
-        sys.stdout.write("\033c")
-        print(fps)
+            # Process the single frame
+            frame, frame_data = process_frame(frame, constants)
 
-    # Write data to file
-    with open(f"{output_data_path}.json", "w", encoding="utf-8") as file:
-        json.dump(full_data, file, indent=4)
 
-    # Hang on the last frame until user presses a key
-    cv.waitKey(0)
+            # full data will contain data for ALL frames. If it is an image, there will be only one list within full_data.
+            # if it is a video, then it will be a list of all data for each frame.
+            full_data.append(frame_data)
+            cv.line(frame, (x_border, horizon), (frame_width+x_border, horizon), (0, 0, 255), 2)
+
+            # Display the frame in a window
+            cv.imshow(file_name, frame)
+
+            # wait for frame to display
+            cv.waitKey(1)
+
+            # Just an FPS calculator
+            curr_time = time.perf_counter()
+            fps = 1 / (curr_time - prev_time)
+            prev_time = curr_time
+            sys.stdout.write("\033c")
+            print(fps)
+
+        # Write data to file
+        with open(f"{output_data_path}.json", "w", encoding="utf-8") as file:
+            json.dump(full_data, file, indent=4)
+
+        # Hang on the last frame until user presses a key
+        cv.waitKey(0)
+
+
+except Exception as e:
+    print("The program encountered an error:\n")
+    print(e)
+    input("\nPress enter to end the program")

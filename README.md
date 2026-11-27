@@ -106,6 +106,10 @@ If you want to just look at my raw-unfiltered thoughts throughout the project, y
 - Looked into the [dataset](https://fsoco.github.io/fsoco-dataset/download) and found a [sample dataset](https://drive.google.com/file/d/1l2k7q0KG7ejqquepgJBMeJkwueVutf5t/view)
     - Uses the Supervisely image annotation format
     - Has a bounding box and panoptic segmentation dataset
+- Leaned away from using Neural Networks for 3 reasons:
+    1. Unsure about performance on such a lightweight system
+    2. I have/had a feeling that other people would try to use a neural network program (YOLO), as Supervisely has integrated tools to do that.
+    3. I wanted to see if it was possible to come up with something that doesn't require neural network training.
 
 ### Initial Data Review
 - Upon downloading the sample dataset I had multiple thoughts and ideas

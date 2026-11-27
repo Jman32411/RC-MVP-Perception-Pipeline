@@ -194,7 +194,7 @@ def get_cone_boxes(contours: np.ndarray, horizon: int, error: float, cone_scale_
 def draw_boxes(input_image: np.ndarray, box_data: list, index: int):
     thickness = 2
     color_key = {
-        "blue":(255, 0, 0),
+        "blue":(0, 180, 180),
         "yellow": (0, 255, 255),
     }
     # Each frame/box_data should be a list of dictionaries
@@ -275,92 +275,99 @@ def process_frame(frame: np.ndarray, constants: list, box_index: int):
     draw_boxes(frame, cone_data, box_index)
     return (frame, cone_data)
 
+try:
+    # clear terminal
+    os.system('cls||clear')
+    file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
 
-# clear terminal
-os.system('cls||clear')
-file_name = input("Please enter the NAME AND EXTENSION of the file you wish to read: ")
+    # Create the window with the filename
+    cv.namedWindow(file_name)
 
-# Create the window with the filename
-cv.namedWindow(file_name)
-
-# set our error to something large so that most cones get detected
-scale_factor_error = 10
-
-
-
-# Put the sliders into the window
-cv.createTrackbar('horizon (%)', file_name, 0, 1000, nothing)
-cv.createTrackbar('box_index', file_name, 0, 200, nothing)
-cv.createTrackbar('border_x', file_name, 0, 3000, nothing)
-cv.createTrackbar('border_y', file_name, 0, 2000, nothing)
-
-# Make sure output folder exists
-root = os.getcwd()
-make_folders(root)
-
-# get the image path
-input_folder = rf"input\img"
-output_root = rf"output"
-input_file_path = f"{input_folder}\\{file_name}"
-output_image_path = f"{output_root}\\img\\{file_name}"
-output_data_path = f"{output_root}\\ann\\{file_name}"
-cap = cv.VideoCapture(input_file_path)
-
-with open("constants.json", "r", encoding="utf-8") as file:
-    constants = json.load(file)
-
-# Verify the file opened properly
-if not cap.isOpened():
-    input("Error: Could not open video. Press enter to end the program. ")
-else:
-    while True:
-        # Read the next frame
-        ret, frame = cap.read()
-        # Stop the loop if there are no frames left (end of video)
-        if not ret:
-            break
-        key_pressed = cv.waitKey(1)
-        # Convert image to bgr color
-        frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
-        # get frame dimensions
-        frame_height, frame_width, channels = frame.shape
-
-        # set bounds for trackbars
-        cv.setTrackbarMax('border_x', file_name, round(frame_width/2))
-        cv.setTrackbarMax('border_y', file_name, round(frame_height/2))
-        
-        # reset box index to 0 so that we don't have an indexing problem from previous frame
-        cv.setTrackbarPos("box_index", file_name, 0)
-        while key_pressed == -1:
-            # Get a fresh frame
-            line = frame.copy()
-
-            # get slider positions
-            horizon_percent = cv.getTrackbarPos('horizon (%)', file_name)/1000
-            box_index = cv.getTrackbarPos('box_index', file_name)
-            x_border = np.clip(cv.getTrackbarPos('border_x', file_name), 0, round(frame_width/2))
-            y_border = np.clip(cv.getTrackbarPos('border_y', file_name), 0, round(frame_height/2))
-
-            horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
-            
-            # Process the single frame
-            line, frame_data = process_frame(line, constants, box_index)
-
-            # Draw borders
-            # y_border
-            line = cv.line(line, (x_border, y_border), (frame_width-x_border, y_border), (0, 0, 255), 1)
-            line = cv.line(line, (x_border, frame_height-y_border), (frame_width-x_border, frame_height-y_border), (0, 0, 255), 1)
-
-            # x_border
-            line = cv.line(line, (x_border, y_border), (x_border, frame_height-y_border), (0, 0, 255), 1)
-            line = cv.line(line, (frame_width - x_border, y_border), (frame_width-x_border, frame_height-y_border), (0, 0, 255), 1)
-
-            # horizon
-            line = cv.line(line, (x_border, horizon), (frame_width-x_border, horizon), (255, 0, 255), 1)
-            
-            # Display the frame in a window
-            cv.imshow(file_name, line)
+    # set our error to something large so that most cones get detected
+    scale_factor_error = 10
 
 
-            # Check periodically to see if any key is pressed.
+
+    # Put the sliders into the window
+    cv.createTrackbar('horizon (%)', file_name, 0, 1000, nothing)
+    cv.createTrackbar('box_index', file_name, 0, 200, nothing)
+    cv.createTrackbar('border_x', file_name, 0, 3000, nothing)
+    cv.createTrackbar('border_y', file_name, 0, 2000, nothing)
+
+    # Make sure output folder exists
+    # root = os.getcwd()
+    root = os.path.dirname(os.path.abspath(__file__))
+    print(root)
+    make_folders(root)
+
+    # get the image path
+    input_folder = rf"{root}\input\img"
+    output_root = rf"{root}\output"
+    input_file_path = f"{input_folder}\\{file_name}"
+    output_image_path = f"{output_root}\\img\\{file_name}"
+    output_data_path = f"{output_root}\\ann\\{file_name}"
+
+    cap = cv.VideoCapture(input_file_path)
+
+    with open(f"{root}\\constants.json", "r", encoding="utf-8") as file:
+        constants = json.load(file)
+
+    # Verify the file opened properly
+    if not cap.isOpened():
+        input("Error: Could not open video. Press enter to end the program. ")
+    else:
+        while True:
+            # Read the next frame
+            ret, frame = cap.read()
+            # Stop the loop if there are no frames left (end of video)
+            if not ret:
+                break
             key_pressed = cv.waitKey(1)
+            # Convert image to bgr color
+            frame = cv.cvtColor(frame, cv.IMREAD_COLOR_BGR)
+            # get frame dimensions
+            frame_height, frame_width, channels = frame.shape
+
+            # set bounds for trackbars
+            cv.setTrackbarMax('border_x', file_name, round(frame_width/2))
+            cv.setTrackbarMax('border_y', file_name, round(frame_height/2))
+            
+            # reset box index to 0 so that we don't have an indexing problem from previous frame
+            cv.setTrackbarPos("box_index", file_name, 0)
+            while key_pressed == -1:
+                # Get a fresh frame
+                line = frame.copy()
+
+                # get slider positions
+                horizon_percent = cv.getTrackbarPos('horizon (%)', file_name)/1000
+                box_index = cv.getTrackbarPos('box_index', file_name)
+                x_border = np.clip(cv.getTrackbarPos('border_x', file_name), 0, round(frame_width/2))
+                y_border = np.clip(cv.getTrackbarPos('border_y', file_name), 0, round(frame_height/2))
+
+                horizon = y_border + round((frame_height-(2*y_border))*horizon_percent)
+                
+                # Process the single frame
+                line, frame_data = process_frame(line, constants, box_index)
+
+                # Draw borders
+                # y_border
+                line = cv.line(line, (x_border, y_border), (frame_width-x_border, y_border), (0, 0, 255), 1)
+                line = cv.line(line, (x_border, frame_height-y_border), (frame_width-x_border, frame_height-y_border), (0, 0, 255), 1)
+
+                # x_border
+                line = cv.line(line, (x_border, y_border), (x_border, frame_height-y_border), (0, 0, 255), 1)
+                line = cv.line(line, (frame_width - x_border, y_border), (frame_width-x_border, frame_height-y_border), (0, 0, 255), 1)
+
+                # horizon
+                line = cv.line(line, (x_border, horizon), (frame_width-x_border, horizon), (255, 0, 255), 1)
+                
+                # Display the frame in a window
+                cv.imshow(file_name, line)
+
+
+                # Check periodically to see if any key is pressed.
+                key_pressed = cv.waitKey(1)
+except Exception as e:
+    print("The program encountered an error:\n")
+    print(e)
+    input("\nPress enter to end the program")
