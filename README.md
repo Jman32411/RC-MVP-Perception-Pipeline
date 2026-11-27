@@ -92,7 +92,7 @@ Using "box_drawing_v3.py" as a skeleton, the parameter finder was updated to inc
     - One of the main culprits of this terrible performance is the fact that it takes ***TWO*** loops to fully process a single frame (one to get the contours and run an intial filter and another to do the vertical-box joining and a secondary filter)
     
 ## Documentation/Process
-If you want to just look at my raw-unfiltered thoughts throughout the project, you can look at my Google Document note-sheet [here](https://docs.google.com/document/d/113G8CNeRWPbQwE5lvHY49GNGjqd8b962rAE1FGdqTR8/edit?usp=sharing). 
+If you want to just look at my raw-unfiltered thoughts throughout the project, you can look at my Google Document note-sheet [here](https://docs.google.com/document/d/113G8CNeRWPbQwE5lvHY49GNGjqd8b962rAE1FGdqTR8/edit?usp=sharing). If not, you can read a ***MUCH MORE*** condensed version below.
 
 ### Initial Research
 - Looked into Python systems, as that is the language I am most comfortable with
