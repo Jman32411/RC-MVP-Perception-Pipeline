@@ -1,7 +1,3 @@
-*.zip
-*.img
-*.jpg
-*.png
-input/
-output/
+input/img/LARGE.mp4
+input/img/small.mp4
 Data/
